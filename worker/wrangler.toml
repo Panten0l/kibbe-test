@@ -7,4 +7,4 @@ compatibility_date = "2025-01-01"
 # Секрет ANTHROPIC_API_KEY задаётся отдельно командой:
 #   npx wrangler secret put ANTHROPIC_API_KEY
 [vars]
-ALLOWED_ORIGIN = "*"
+ALLOWED_ORIGIN = "https://kibbe.omanpan.org"
