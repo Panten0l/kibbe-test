@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Определи свой типаж · Liza Kuncevich</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --navy:    #04070F;
+  --navy2:   #080E1C;
+  --blue:    #3B8EF0;
+  --blue-lt: #A8CDFB;
+  --blue-dk: #1A5DB5;
+  --glass:   rgba(255,255,255,0.042);
+  --glass2:  rgba(255,255,255,0.07);
+  --border:  rgba(168,205,251,0.14);
+  --border2: rgba(168,205,251,0.28);
+  --white:   #FFFFFF;
+  --white70: rgba(255,255,255,0.70);
+  --white40: rgba(255,255,255,0.40);
+  --white20: rgba(255,255,255,0.20);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--navy);
+  color: var(--white);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Ambient background ── */
+.bg-canvas {
+  position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+}
+.orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  animation: drift linear infinite;
+}
+.orb1 { width: 600px; height: 600px; background: radial-gradient(circle, #1A5DB5 0%, transparent 70%); top: -200px; left: -150px; animation-duration: 28s; }
+.orb2 { width: 500px; height: 500px; background: radial-gradient(circle, #3B8EF0 0%, transparent 70%); top: 40%; right: -180px; animation-duration: 22s; animation-delay: -8s; }
+.orb3 { width: 400px; height: 400px; background: radial-gradient(circle, #0B3570 0%, transparent 70%); bottom: -100px; left: 30%; animation-duration: 35s; animation-delay: -14s; }
+.orb4 { width: 300px; height: 300px; background: radial-gradient(circle, #6BAEF8 0%, transparent 70%); top: 25%; left: 55%; animation-duration: 18s; animation-delay: -5s; opacity: 0.2; }
+
+@keyframes drift {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(40px, -30px) scale(1.05); }
+  66%  { transform: translate(-20px, 25px) scale(0.97); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* Subtle grid overlay */
+.bg-canvas::after {
+  content: '';
+  position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(168,205,251,0.025) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(168,205,251,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* ── Layout ── */
+#app {
+  position: relative; z-index: 1;
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0 1.5rem 4rem;
+}
+
+.screen { display: none; width: 100%; max-width: 680px; }
+.screen.active { display: flex; flex-direction: column; align-items: center; }
+
+/* ── Header bar ── */
+.header {
+  width: 100%; max-width: 680px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.5rem 0 2.5rem;
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  background: var(--glass2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.brand-name { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 400; letter-spacing: 0.02em; color: var(--white); }
+.brand-handle { font-size: 11px; color: var(--white40); letter-spacing: 0.04em; }
+.header-tag {
+  font-size: 11px; color: var(--blue-lt);
+  border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 20px;
+  background: rgba(59,142,240,0.08);
+  letter-spacing: 0.04em;
+}
+
+/* ── Glass card ── */
+.glass-card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 0 0 0.5px rgba(168,205,251,0.06) inset,
+              0 24px 48px rgba(0,0,0,0.4);
+  width: 100%; padding: 2.5rem;
+  position: relative; overflow: hidden;
+}
+.glass-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,205,251,0.35), transparent);
+}
+
+/* ── Home screen ── */
+.home-eyebrow {
+  font-size: 11px; letter-spacing: 0.14em; color: var(--blue-lt);
+  text-transform: uppercase; margin-bottom: 1.5rem;
+  display: flex; align-items: center; gap: 8px;
+}
+.home-eyebrow::before {
+  content: ''; display: block; width: 24px; height: 1px;
+  background: var(--blue-lt);
+}
+
+.home-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(3rem, 8vw, 5rem);
+  font-weight: 300; line-height: 1.05;
+  letter-spacing: -0.01em;
+  margin-bottom: 1.25rem;
+}
+.home-title em { font-style: italic; color: var(--blue-lt); }
+
+.home-desc {
+  font-size: 15px; color: var(--white70); line-height: 1.7;
+  margin-bottom: 2.5rem; max-width: 480px;
+}
+
+.mode-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-bottom: 2rem; }
+.mode-btn {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem 1.25rem;
+  cursor: pointer; text-align: left;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  position: relative; overflow: hidden;
+}
+.mode-btn::after {
+  content: '';
+  position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(59,142,240,0.12), transparent 70%);
+  transition: opacity 0.3s;
+}
+.mode-btn:hover { background: var(--glass2); border-color: var(--border2); transform: translateY(-2px); }
+.mode-btn:hover::after { opacity: 1; }
+.mode-icon {
+  font-size: 22px; margin-bottom: 1rem;
+  color: var(--blue-lt);
+}
+.mode-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; color: var(--white); margin-bottom: 4px; }
+.mode-desc { font-size: 13px; color: var(--white40); line-height: 1.5; }
+.mode-arrow {
+  position: absolute; top: 1.25rem; right: 1.25rem;
+  font-size: 16px; color: var(--white20);
+  transition: color 0.2s, transform 0.2s;
+}
+.mode-btn:hover .mode-arrow { color: var(--blue-lt); transform: translateX(2px) translateY(-2px); }
+
+.home-note { font-size: 12px; color: var(--white40); text-align: center; }
+
+/* ── Progress bar ── */
+.progress-wrap { width: 100%; margin-bottom: 2rem; }
+.progress-meta { display: flex; justify-content: space-between; margin-bottom: 10px; }
+.progress-step { font-size: 12px; color: var(--white40); letter-spacing: 0.04em; }
+.progress-count { font-size: 12px; color: var(--blue-lt); }
+.progress-track {
+  height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--blue-dk), var(--blue));
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(.4,0,.2,1);
+  position: relative;
+}
+.progress-fill::after {
+  content: '';
+  position: absolute; right: 0; top: 50%;
+  transform: translateY(-50%);
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--blue-lt);
+  box-shadow: 0 0 8px var(--blue);
+}
+
+/* ── Question ── */
+.q-label {
+  font-size: 11px; letter-spacing: 0.1em; color: var(--blue-lt);
+  text-transform: uppercase; margin-bottom: 1.25rem;
+}
+.q-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  font-weight: 300; line-height: 1.3;
+  color: var(--white);
+  margin-bottom: 0.5rem;
+}
+.q-hint { font-size: 13px; color: var(--white40); line-height: 1.55; margin-bottom: 1.75rem; }
+
+.options { display: flex; flex-direction: column; gap: 8px; }
+
+.opt-btn {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.9rem 1.1rem;
+  cursor: pointer;
+  display: flex; align-items: flex-start; gap: 12px;
+  text-align: left;
+  transition: background 0.18s, border-color 0.18s, transform 0.12s;
+  width: 100%;
+}
+.opt-btn:hover { background: rgba(59,142,240,0.07); border-color: rgba(59,142,240,0.35); transform: translateX(3px); }
+.opt-btn.selected {
+  background: rgba(59,142,240,0.12);
+  border-color: rgba(59,142,240,0.55);
+  box-shadow: 0 0 20px rgba(59,142,240,0.1);
+}
+.opt-dot {
+  width: 18px; height: 18px; min-width: 18px; border-radius: 50%;
+  border: 1.5px solid var(--border2);
+  margin-top: 1px;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+.opt-btn.selected .opt-dot {
+  border-color: var(--blue);
+  background: var(--blue);
+}
+.opt-btn.selected .opt-dot::after {
+  content: '';
+  position: absolute;
+  width: 6px; height: 6px; border-radius: 50%;
+  background: white;
+}
+.opt-text { font-size: 14px; color: var(--white70); line-height: 1.5; }
+.opt-btn.selected .opt-text { color: var(--white); }
+
+.nav-row { display: flex; gap: 10px; margin-top: 1.75rem; width: 100%; }
+
+.btn {
+  border-radius: 12px; font-size: 14px; font-weight: 500;
+  padding: 0.8rem 1.25rem; cursor: pointer; border: none;
+  transition: opacity 0.15s, transform 0.12s, background 0.15s;
+  font-family: 'Inter', sans-serif;
+}
+.btn:active { transform: scale(0.97); }
+
+.btn-ghost {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  color: var(--white70);
+  padding: 0.8rem 1rem;
+}
+.btn-ghost:hover { background: var(--glass2); color: var(--white); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue-dk), var(--blue));
+  color: white; flex: 1;
+  box-shadow: 0 4px 20px rgba(59,142,240,0.3);
+}
+.btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 24px rgba(59,142,240,0.45); }
+
+/* ── Photo screen ── */
+.drop-zone {
+  border: 1.5px dashed rgba(168,205,251,0.25);
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  width: 100%;
+}
+.drop-zone:hover { background: rgba(59,142,240,0.05); border-color: rgba(168,205,251,0.45); }
+.drop-icon { font-size: 2.5rem; margin-bottom: 1rem; color: var(--blue-lt); }
+.drop-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; margin-bottom: 6px; }
+.drop-hint { font-size: 13px; color: var(--white40); }
+#photo-input { display: none; }
+
+#preview-wrap { width: 100%; margin-top: 1.25rem; display: none; }
+#preview-wrap img {
+  width: 100%; max-height: 300px; object-fit: cover;
+  border-radius: 14px; border: 1px solid var(--border);
+}
+.preview-label {
+  margin-top: 10px; font-size: 13px; color: var(--blue-lt);
+  display: flex; align-items: center; gap: 6px;
+}
+
+.photo-tips {
+  margin-top: 1.25rem; width: 100%;
+  background: rgba(59,142,240,0.06);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 1rem 1.25rem;
+}
+.photo-tips-title { font-size: 12px; font-weight: 500; color: var(--blue-lt); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.06em; }
+.photo-tips-list { font-size: 13px; color: var(--white40); line-height: 1.8; }
+
+/* ── Loading ── */
+.loading-wrap { text-align: center; padding: 4rem 2rem; }
+.glow-spinner {
+  width: 56px; height: 56px; margin: 0 auto 1.5rem;
+  border-radius: 50%;
+  border: 2px solid rgba(59,142,240,0.15);
+  border-top-color: var(--blue);
+  animation: spin 0.9s linear infinite;
+  position: relative;
+}
+.glow-spinner::after {
+  content: '';
+  position: absolute; inset: 4px; border-radius: 50%;
+  border: 1px solid transparent;
+  border-top-color: rgba(168,205,251,0.4);
+  animation: spin 0.6s linear infinite reverse;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+.loading-sub { font-size: 13px; color: var(--white40); }
+.loading-dots::after {
+  content: '';
+  animation: dots 1.4s steps(4, end) infinite;
+}
+@keyframes dots {
+  0%   { content: ''; }
+  25%  { content: '.'; }
+  50%  { content: '..'; }
+  75%  { content: '...'; }
+  100% { content: ''; }
+}
+
+/* ── Result screen ── */
+.result-eyebrow {
+  font-size: 11px; letter-spacing: 0.12em; color: var(--blue-lt);
+  text-transform: uppercase; margin-bottom: 1rem; text-align: center;
+}
+.result-type {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(2.5rem, 9vw, 4.5rem);
+  font-weight: 300; line-height: 1.05; text-align: center;
+  margin-bottom: 0.5rem;
+}
+.result-type em { font-style: italic; color: var(--blue-lt); }
+.result-subtitle { font-size: 15px; color: var(--white60); text-align: center; margin-bottom: 2rem; color: var(--white40); }
+
+.result-desc-card {
+  width: 100%;
+  background: rgba(59,142,240,0.06);
+  border: 1px solid rgba(59,142,240,0.2);
+  border-radius: 16px; padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-size: 15px; color: var(--white70); line-height: 1.7;
+}
+
+.recs-title {
+  font-size: 11px; letter-spacing: 0.1em; color: var(--white40);
+  text-transform: uppercase; margin-bottom: 1rem;
+  align-self: flex-start; width: 100%;
+}
+.recs-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; margin-bottom: 1.5rem; }
+.rec-card {
+  background: var(--glass); border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.9rem;
+}
+.rec-label { font-size: 10px; color: var(--blue-lt); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+.rec-val { font-size: 13px; color: var(--white70); line-height: 1.4; }
+
+.celebs-wrap { width: 100%; margin-bottom: 2rem; }
+.celebs-label { font-size: 11px; color: var(--white40); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
+.celebs-list { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; color: var(--white70); letter-spacing: 0.01em; }
+
+.cta-card {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(26,93,181,0.25), rgba(59,142,240,0.15));
+  border: 1px solid rgba(59,142,240,0.3);
+  border-radius: 20px; padding: 2rem;
+  text-align: center;
+  position: relative; overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.cta-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(168,205,251,0.5), transparent);
+}
+.cta-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 24px; font-weight: 300; margin-bottom: 0.5rem;
+}
+.cta-desc { font-size: 14px; color: var(--white60); line-height: 1.6; margin-bottom: 1.5rem; color: var(--white70); }
+.btn-cta {
+  display: inline-block;
+  padding: 0.9rem 2rem;
+  background: white; color: var(--navy2);
+  border-radius: 12px; font-size: 14px; font-weight: 500;
+  cursor: pointer; text-decoration: none;
+  transition: opacity 0.15s, transform 0.12s;
+  font-family: 'Inter', sans-serif;
+}
+.btn-cta:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.result-footer { display: flex; gap: 10px; width: 100%; }
+.btn-restart { background: var(--glass); border: 1px solid var(--border); color: var(--white70); padding: 0.8rem 1.5rem; border-radius: 12px; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; transition: background 0.15s; }
+.btn-restart:hover { background: var(--glass2); }
+
+/* ── Error ── */
+.error-banner {
+  background: rgba(220,50,50,0.1); border: 1px solid rgba(220,50,50,0.25);
+  border-radius: 10px; padding: 0.75rem 1rem;
+  font-size: 13px; color: #FF8080;
+  display: none; margin-top: 1rem; width: 100%;
+}
+
+/* ── Entrance animation ── */
+.fade-up {
+  opacity: 0; transform: translateY(16px);
+  animation: fadeUp 0.5s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+.delay-4 { animation-delay: 0.32s; }
+
+@media (max-width: 480px) {
+  .mode-row { grid-template-columns: 1fr; }
+  .recs-grid { grid-template-columns: repeat(2, 1fr); }
+  .glass-card { padding: 1.75rem 1.25rem; }
+  .home-title { font-size: 2.8rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-canvas">
+  <div class="orb orb1"></div>
+  <div class="orb orb2"></div>
+  <div class="orb orb3"></div>
+  <div class="orb orb4"></div>
+</div>
+
+<div class="header">
+  <div class="brand">
+    <div class="brand-dot">✦</div>
+    <div>
+      <div class="brand-name">Liza Kuncevich</div>
+      <div class="brand-handle">@_lizakuncevich</div>
+    </div>
+  </div>
+  <div class="header-tag">Система Кибби</div>
+</div>
+
+<div id="app">
+
+<!-- ══════ HOME ══════ -->
+<div id="screen-home" class="screen active">
+  <div style="width:100%; text-align:left; padding-bottom: 1rem;">
+    <div class="home-eyebrow fade-up">Персональный стайлинг</div>
+    <h1 class="home-title fade-up delay-1">Найди свой<br><em>типаж</em></h1>
+    <p class="home-desc fade-up delay-2">Система Кибби помогает понять, какие силуэты, линии и ткани работают именно на тебя — а не вопреки тебе. 13 типажей, точный результат.</p>
+  </div>
+
+  <div class="mode-row fade-up delay-3">
+    <button class="mode-btn" onclick="startQuiz()">
+      <span class="mode-arrow">↗</span>
+      <div class="mode-icon">✦</div>
+      <div class="mode-title">Ответить на вопросы</div>
+      <div class="mode-desc">10 вопросов о внешности — без фото</div>
+    </button>
+    <button class="mode-btn" onclick="goScreen('screen-photo')">
+      <span class="mode-arrow">↗</span>
+      <div class="mode-icon">⬡</div>
+      <div class="mode-title">Загрузить фото</div>
+      <div class="mode-desc">Анализ черт лица и фигуры через AI</div>
+    </button>
+  </div>
+
+  <p class="home-note fade-up delay-4">Тест занимает 3–5 минут · Результат сохраняется</p>
+</div>
+
+<!-- ══════ QUIZ ══════ -->
+<div id="screen-quiz" class="screen">
+  <div class="progress-wrap" style="width:100%">
+    <div class="progress-meta">
+      <span class="progress-step" id="q-step">Вопрос 1 из 10</span>
+      <span class="progress-count" id="q-pct">10%</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:10%"></div></div>
+  </div>
+
+  <div class="glass-card fade-up">
+    <div class="q-label" id="q-label">Силуэт и фигура</div>
+    <div class="q-text" id="q-text"></div>
+    <div class="q-hint" id="q-hint"></div>
+    <div class="options" id="options-list"></div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="prevQ()" id="btn-back">← Назад</button>
+      <button class="btn btn-primary" onclick="nextQ()" id="btn-next">Далее</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PHOTO ══════ -->
+<div id="screen-photo" class="screen">
+  <div class="glass-card fade-up" style="width:100%">
+    <div class="q-label">Анализ фото</div>
+    <div class="q-text" style="margin-bottom:0.5rem">Загрузи своё фото</div>
+    <div class="q-hint">AI проанализирует черты лица, силуэт плеч и фигуры и определит твой типаж по Кибби.</div>
+
+    <input type="file" id="photo-input" accept="image/*" onchange="handlePhoto(this)">
+    <div class="drop-zone" onclick="document.getElementById('photo-input').click()">
+      <div class="drop-icon">⬡</div>
+      <div class="drop-title">Нажми для выбора</div>
+      <div class="drop-hint">JPG или PNG · до 15 МБ</div>
+    </div>
+
+    <div id="preview-wrap">
+      <img id="preview-img" alt="Превью">
+      <div class="preview-label">✓ Фото загружено</div>
+    </div>
+
+    <div class="photo-tips">
+      <div class="photo-tips-title">Советы для лучшего результата</div>
+      <div class="photo-tips-list">
+        — Фото в полный рост или по пояс<br>
+        — Нейтральный фон, хорошее освещение<br>
+        — Без сильных фильтров и тёмных очков
+      </div>
+    </div>
+
+    <div class="error-banner" id="photo-error">Ошибка при анализе. Попробуй ещё раз.</div>
+
+    <div class="nav-row" style="margin-top:1.5rem">
+      <button class="btn btn-ghost" onclick="goScreen('screen-home')">← Назад</button>
+      <button class="btn btn-primary" id="btn-analyze" onclick="analyzePhoto()" disabled>Определить типаж</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ LOADING ══════ -->
+<div id="screen-loading" class="screen">
+  <div class="loading-wrap">
+    <div class="glow-spinner"></div>
+    <div class="loading-title" id="loading-title">Анализирую</div>
+    <div class="loading-sub">Подбираю твой типаж<span class="loading-dots"></span></div>
+  </div>
+</div>
+
+<!-- ══════ RESULT ══════ -->
+<div id="screen-result" class="screen">
+  <div style="text-align:center; width:100%; margin-bottom:2rem;">
+    <div class="result-eyebrow fade-up">Твой типаж по Кибби</div>
+    <div class="result-type fade-up delay-1" id="result-type"></div>
+    <div class="result-subtitle fade-up delay-2" id="result-subtitle"></div>
+  </div>
+
+  <div class="result-desc-card fade-up delay-2" id="result-desc"></div>
+
+  <div class="recs-title">Рекомендации стилиста</div>
+  <div class="recs-grid" id="recs-grid"></div>
+
+  <div class="celebs-wrap fade-up">
+    <div class="celebs-label">Звёзды с твоим типажом</div>
+    <div class="celebs-list" id="result-celebs"></div>
+  </div>
+
+  <div class="cta-card fade-up">
+    <div class="cta-title">Готова к своему гардеробу?</div>
+    <div class="cta-desc">Лиза поможет собрать образы, которые будут работать именно на твою внешность — от повседневного до особых событий.</div>
+    <a href="https://www.instagram.com/_lizakuncevich/" target="_blank" class="btn-cta">Написать Лизе → Instagram</a>
+  </div>
+
+  <div class="result-footer fade-up">
+    <button class="btn-restart" onclick="restart()">← Пройти снова</button>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ────────────────────────────────────────────────────────────
+   НАСТРОЙКА: вставь сюда адрес своего Cloudflare Worker.
+   Например: 'https://kibbe-proxy.твой-аккаунт.workers.dev'
+   Пока тут пусто — фото-анализ покажет понятное сообщение.
+   ──────────────────────────────────────────────────────────── */
+const WORKER_URL = '';
+
+const QUESTIONS = [
+  {
+    label: "Силуэт и фигура",
+    text: "Как ты бы описала общий силуэт своей фигуры?",
+    hint: "Смотри на общий контур, а не на отдельные части тела",
+    opts: [
+      { text: "Вытянутый, длинный, угловатый", scores: { D:3, FD:2 } },
+      { text: "Мягкий, округлый, выраженно женственный", scores: { R:3, SN:1, SD:1 } },
+      { text: "Прямой, симметричный, хорошо пропорциональный", scores: { C:3, DC:2 } },
+      { text: "Компактный, смешанный — острое соседствует с мягким", scores: { G:3, FG:2 } },
+      { text: "Свободный, слегка широкий, спортивный", scores: { N:3, FN:2 } }
+    ]
+  },
+  {
+    label: "Плечи",
+    text: "Какая у тебя линия плеч?",
+    hint: "Оцени ширину и форму — смотри в зеркало анфас",
+    opts: [
+      { text: "Узкие, покатые или хрупкие", scores: { R:2, G:1, C:1 } },
+      { text: "Широкие и прямые — плечи заметны", scores: { D:2, FN:2, FD:1 } },
+      { text: "Умеренной ширины, сбалансированные", scores: { N:2, C:2, DC:1 } },
+      { text: "Острые, чёткие, выраженные", scores: { D:3, FD:2 } },
+      { text: "Покатые, мягко переходящие в руки", scores: { R:2, SN:2, SD:1 } }
+    ]
+  },
+  {
+    label: "Талия и бёдра",
+    text: "Как выглядят линия талии и бёдра?",
+    hint: "",
+    opts: [
+      { text: "Ярко выраженная талия, округлые бёдра — настоящая «восьмёрка»", scores: { R:3, SR:2 } },
+      { text: "Прямая фигура — талия почти не выражена", scores: { D:2, G:2, N:1 } },
+      { text: "Умеренные изгибы, фигура пропорциональна", scores: { C:3, DC:2, SC:2 } },
+      { text: "Длинная талия, ноги длинные, линии вытянутые", scores: { D:2, FD:2, N:1 } },
+      { text: "Небольшие изгибы, в целом скорее прямая", scores: { SN:2, SD:1, N:1 } }
+    ]
+  },
+  {
+    label: "Рост",
+    text: "Какой у тебя рост?",
+    hint: "",
+    opts: [
+      { text: "Высокая — 170 см и выше", scores: { D:2, FD:2, FN:1 } },
+      { text: "Средний — 160–169 см", scores: { C:2, N:1, SN:1 } },
+      { text: "Невысокая — до 160 см", scores: { G:2, FG:2, R:1 } },
+      { text: "Очень высокая — 175 см и выше", scores: { D:3, FD:2 } }
+    ]
+  },
+  {
+    label: "Черты лица",
+    text: "Опиши форму лица и общий характер черт",
+    hint: "",
+    opts: [
+      { text: "Лицо вытянутое, черты резкие и чёткие", scores: { D:3, FD:2 } },
+      { text: "Лицо округлое, черты мягкие и «пухлые»", scores: { R:3, SR:2 } },
+      { text: "Симметричные, ровные черты без явного характера", scores: { C:3, DC:2, SC:2 } },
+      { text: "Черты смешанные — где-то острое, где-то мягкое", scores: { G:3, FG:2 } },
+      { text: "Широкие черты, «земной» и натуральный образ", scores: { N:3, FN:2 } }
+    ]
+  },
+  {
+    label: "Нос и скулы",
+    text: "Как выглядят нос и скулы?",
+    hint: "",
+    opts: [
+      { text: "Нос прямой и чёткий, скулы выраженные", scores: { D:2, FD:2, DC:1 } },
+      { text: "Нос мягкий или небольшой, скулы округлые", scores: { R:2, SR:2, SN:1 } },
+      { text: "Пропорциональный нос, умеренные скулы", scores: { C:2, SC:2 } },
+      { text: "Нос курносый или маленький, черты игривые", scores: { G:2, FG:2 } },
+      { text: "Нос широкий или мясистый, черты натуральные", scores: { N:2, FN:1 } }
+    ]
+  },
+  {
+    label: "Энергетика",
+    text: "Как тебя воспринимают окружающие?",
+    hint: "Что говорят чаще всего — не как ты себя ощущаешь, а как видят другие",
+    opts: [
+      { text: "Эффектная, загадочная — взгляд задерживается сам собой", scores: { D:3, FD:2 } },
+      { text: "Очень женственная, мягкая, чувственная", scores: { R:3, SR:2 } },
+      { text: "Элегантная, утончённая, классическая", scores: { C:3, SC:2, DC:1 } },
+      { text: "Энергичная, молодая, задорная", scores: { G:3, FG:2 } },
+      { text: "Спортивная, открытая, расслабленная", scores: { N:3, FN:2, SN:1 } }
+    ]
+  },
+  {
+    label: "Ткани",
+    text: "Какие ткани и фактуры тебе интуитивно ближе?",
+    hint: "",
+    opts: [
+      { text: "Гладкие, жёсткие, структурированные — кожа, атлас", scores: { D:2, FD:1 } },
+      { text: "Мягкие, текучие, обволакивающие — шифон, шёлк, кружево", scores: { R:3, SR:2 } },
+      { text: "Классические средние — шерсть, джерси, трикотаж", scores: { C:2, N:1 } },
+      { text: "Лёгкие натуральные — хлопок, лён, с фактурой", scores: { N:2, SN:1, G:1 } },
+      { text: "Объёмные, многослойные, оверсайз-фактуры", scores: { FN:2, N:1, G:1 } }
+    ]
+  },
+  {
+    label: "Аксессуары",
+    text: "Какие украшения тебе идут больше всего?",
+    hint: "Вспомни, что получаешь комплименты носишь",
+    opts: [
+      { text: "Крупные, геометричные, скульптурные — statement-украшения", scores: { D:3, FD:2 } },
+      { text: "Маленькие, круглые, романтичные — жемчуг, цветочки", scores: { R:3, SR:2 } },
+      { text: "Классические, сдержанные — тонкие цепочки, хупы", scores: { C:2, SC:2 } },
+      { text: "Разные, игривые, смешанные стили", scores: { G:2, FG:2 } },
+      { text: "Крупные натуральные — дерево, этника, камни", scores: { N:2, FN:2 } }
+    ]
+  },
+  {
+    label: "Интуиция",
+    text: "На какой образ из знаменитостей ты реагируешь «это моё»?",
+    hint: "Не про кого ты хочешь быть похожей — а что физически кажется «про тебя»",
+    opts: [
+      { text: "Angelina Jolie, Tilda Swinton — острые, эффектные", scores: { D:3, FD:2, SD:1 } },
+      { text: "Marilyn Monroe, Salma Hayek — округлые и чувственные", scores: { R:3, SR:2 } },
+      { text: "Grace Kelly, Natalie Portman — элегантность и гармония", scores: { C:3, SC:2, DC:1 } },
+      { text: "Audrey Hepburn, Emma Watson — компактность и живость", scores: { G:3, FG:2 } },
+      { text: "Jennifer Aniston, Julia Roberts — натуральность и лёгкость", scores: { N:3, FN:2, SN:1 } }
+    ]
+  }
+];
+
+const TYPES = {
+  D:  { name:"Dramatic", ru:"Драматик", sub:"Яркий, эффектный типаж с резкими чертами", celebs:"Angelina Jolie · Tilda Swinton · Cate Blanchett", desc:"Твоя внешность говорит сама за себя — острые черты, длинные линии, сильный силуэт. Ты создана для вещей с характером: структурированных силуэтов, чётких линий, минимализма с акцентом.", recs:[["Силуэт","Прямой, вытянутый"],["Декольте","Глубокое V или квадрат"],["Ткани","Атлас, кожа, структурные"],["Принты","Геометрия, монохром"],["Длина","Макси или мини"],["Избегай","Воланы, рюши, цветочки"]] },
+  SD: { name:"Soft Dramatic", ru:"Мягкий Драматик", sub:"Эффектная внешность с выраженной женственностью", celebs:"Sophia Loren · Halle Berry · Kim Kardashian", desc:"Ты соединяешь силу Драматика и мягкость Романтика. Тебе идут приталенные силуэты с открытым декольте, струящиеся ткани, вещи подчёркивающие твою фигуру.", recs:[["Силуэт","Приталенный, женственный"],["Декольте","Открытое, V-образное"],["Ткани","Шёлк, джерси, атлас"],["Принты","Крупные, абстрактные"],["Длина","Миди или макси"],["Избегай","Оверсайз, угловатое"]] },
+  FD: { name:"Flamboyant Dramatic", ru:"Яркий Драматик", sub:"Самый угловатый и длинный типаж", celebs:"Naomi Campbell · Iman · Grace Jones", desc:"Высокий рост, резкие черты, мощный силуэт — твоя внешность масштабная. Тебе нужны вещи такой же силы: крупные детали, широкие плечи, смелые решения.", recs:[["Силуэт","Угловатый, мощный"],["Детали","Острые плечи, чёткие линии"],["Ткани","Жёсткие, структурные"],["Принты","Крупные, контрастные"],["Аксессуары","Скульптурные, крупные"],["Избегай","Мелкое, кружево, рюши"]] },
+  N:  { name:"Natural", ru:"Натурал", sub:"Естественная, расслабленная внешность", celebs:"Jennifer Aniston · Julia Roberts · Sandra Bullock", desc:"Ты выглядишь лучше всего, когда одета легко и без усилий. Тебе идут свободные силуэты, натуральные ткани и вещи, которые выглядят дорого и небрежно одновременно.", recs:[["Силуэт","Прямой или оверсайз"],["Длина","До колена или ниже"],["Ткани","Хлопок, лён, трикотаж"],["Принты","Полоска, клетка, этника"],["Аксессуары","Крупные натуральные"],["Избегай","Плотно приталенное"]] },
+  SN: { name:"Soft Natural", ru:"Мягкий Натурал", sub:"Натурал с женственными нотками", celebs:"Britney Spears · Cameron Diaz · Scarlett Johansson", desc:"Твоя внешность сочетает натуральную лёгкость с мягкими изгибами. Тебе идут свободные вещи с мягкими деталями — ткани, которые движутся и дышат вместе с тобой.", recs:[["Силуэт","Свободный, мягкий"],["Детали","Мягкие края, без резкости"],["Ткани","Мягкий трикотаж, шифон"],["Принты","Цветы, акварель"],["Длина","Миди, ниже колена"],["Избегай","Жёсткие структуры"]] },
+  FN: { name:"Flamboyant Natural", ru:"Яркий Натурал", sub:"Высокая, широкоплечая, энергичная", celebs:"Brooke Shields · Cindy Crawford · Rachel McAdams", desc:"Крупная, яркая, с широкими плечами и длинными ногами. Тебе нужны вещи в масштаб — крупные детали, широкие силуэты, смелые принты.", recs:[["Силуэт","Широкий, свободный"],["Детали","Крупные, выраженные"],["Ткани","Натуральные, объёмные"],["Принты","Крупные, смелые"],["Аксессуары","Крупные, этнические"],["Избегай","Мелкое, хрупкое"]] },
+  C:  { name:"Classic", ru:"Классик", sub:"Сбалансированный, элегантный типаж", celebs:"Grace Kelly · Natalie Portman · Carolyn Bessette Kennedy", desc:"Ты — олицетворение гармонии и пропорций. Твоя внешность не кричит, но запоминается своей ухоженностью и завершённостью. Тебе подойдёт всё классическое, выверенное, элегантное.", recs:[["Силуэт","Приталенный, симметричный"],["Детали","Умеренные, аккуратные"],["Ткани","Шерсть, шёлк, крепдешин"],["Принты","Мелкие, классика"],["Длина","До колена, миди"],["Избегай","Крайности, экстрим"]] },
+  SC: { name:"Soft Classic", ru:"Мягкий Классик", sub:"Классик с женственными нотками", celebs:"Catherine Zeta-Jones · Jessica Alba · Eva Longoria", desc:"Классическая основа с мягкостью форм. Тебе идут приталенные вещи с нежными деталями — округлые воротники, мягкие ткани, лёгкие цветочные принты.", recs:[["Силуэт","Приталенный, мягкий"],["Детали","Округлые, нежные"],["Ткани","Шифон, мягкая шерсть"],["Принты","Мелкие цветы, горошек"],["Аксессуары","Маленькие, женственные"],["Избегай","Резкость, жёсткую геометрию"]] },
+  DC: { name:"Dramatic Classic", ru:"Драматический Классик", sub:"Элегантность с оттенком силы", celebs:"Cate Blanchett · Faye Dunaway · Michelle Pfeiffer", desc:"Классическая гармония с добавлением остроты. Тебе идёт строгая классика с чёткими деталями — пиджаки с острыми плечами, минималистичные платья с характером.", recs:[["Силуэт","Чёткий, симметричный"],["Детали","Сдержанные, острые"],["Ткани","Структурные, качественные"],["Принты","Геометрия, полоска"],["Аксессуары","Минималистичные"],["Избегай","Рюши, лишние детали"]] },
+  R:  { name:"Romantic", ru:"Романтик", sub:"Максимально женственный типаж", celebs:"Marilyn Monroe · Salma Hayek · Beyoncé", desc:"Твоя внешность создана для чувственности — округлые формы, мягкие черты, женственность в каждой детали. Тебе нужны вещи, которые обнимают и подчёркивают твои формы.", recs:[["Силуэт","Приталенный, облегающий"],["Детали","Кружево, воланы, рюши"],["Ткани","Шёлк, бархат, шифон"],["Принты","Цветы, мелкий горошек"],["Длина","Мини или макси"],["Избегай","Прямые, жёсткие линии"]] },
+  SR: { name:"Soft Romantic", ru:"Мягкий Романтик", sub:"Нежный и воздушный романтик", celebs:"Drew Barrymore · Kate Winslet · Mila Kunis", desc:"Ещё мягче, чем Романтик — округлые формы и хрупкая нежность. Тебе нужны воздушные, лёгкие вещи с романтичными деталями и пастельными красками.", recs:[["Силуэт","Мягкий, округлый"],["Детали","Нежные, воздушные"],["Ткани","Кружево, вуаль, шёлк"],["Принты","Мелкие цветы, пейсли"],["Аксессуары","Маленькие, деликатные"],["Избегай","Геометрию, жёсткость"]] },
+  G:  { name:"Gamine", ru:"Гамин", sub:"Игривый, энергичный, смешанный типаж", celebs:"Audrey Hepburn · Emma Watson · Winona Ryder", desc:"Небольшая, но яркая — сочетание острого и мягкого, игривость и характер. Тебе нужны компактные, лаконичные образы с неожиданными деталями.", recs:[["Силуэт","Компактный, чёткий"],["Детали","Контрастные, острые"],["Ткани","Смешанные фактуры"],["Принты","Геометрия + цветы"],["Длина","Мини, до колена"],["Избегай","Объём и длину"]] },
+  FG: { name:"Flamboyant Gamine", ru:"Яркий Гамин", sub:"Компактный, острый, энергичный", celebs:"Jean Seberg · Liza Minnelli · Twiggy", desc:"Компактная и острая — угловатость преобладает над мягкостью. Тебе нужны короткие, угловатые, контрастные вещи с характером и неожиданными решениями.", recs:[["Силуэт","Угловатый, короткий"],["Детали","Острые, контрастные"],["Ткани","Жёсткие, смелые"],["Принты","Геометрия, полоска, клетка"],["Длина","Мини"],["Избегай","Мягкость, объём"]] }
+};
+
+let answers = [];
+let currentQ = 0;
+let photoBase64 = null;
+let photoMime = null;
+
+function goScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.querySelectorAll('.fade-up').forEach((el, i) => {
+    el.style.animation = 'none';
+    el.offsetHeight;
+    el.style.animation = '';
+  });
+}
+
+function startQuiz() {
+  answers = [];
+  currentQ = 0;
+  goScreen('screen-quiz');
+  renderQ();
+}
+
+function renderQ() {
+  const q = QUESTIONS[currentQ];
+  const pct = Math.round(((currentQ + 1) / QUESTIONS.length) * 100);
+  document.getElementById('q-step').textContent = `Вопрос ${currentQ + 1} из ${QUESTIONS.length}`;
+  document.getElementById('q-pct').textContent = pct + '%';
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('q-label').textContent = q.label;
+  document.getElementById('q-text').textContent = q.text;
+  const hint = document.getElementById('q-hint');
+  hint.textContent = q.hint || '';
+  hint.style.display = q.hint ? 'block' : 'none';
+
+  document.getElementById('btn-back').style.visibility = currentQ === 0 ? 'hidden' : 'visible';
+  document.getElementById('btn-next').textContent = currentQ === QUESTIONS.length - 1 ? 'Узнать результат →' : 'Далее';
+
+  const list = document.getElementById('options-list');
+  list.innerHTML = '';
+  q.opts.forEach((o, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn' + (answers[currentQ] === i ? ' selected' : '');
+    btn.innerHTML = `<span class="opt-dot"></span><span class="opt-text">${o.text}</span>`;
+    btn.onclick = () => {
+      answers[currentQ] = i;
+      list.querySelectorAll('.opt-btn').forEach((b, j) => b.classList.toggle('selected', j === i));
+    };
+    list.appendChild(btn);
+  });
+
+  const card = document.querySelector('#screen-quiz .glass-card');
+  card.style.animation = 'none'; card.offsetHeight; card.style.animation = 'fadeUp 0.35s cubic-bezier(.4,0,.2,1) forwards';
+}
+
+function nextQ() {
+  if (answers[currentQ] === undefined) {
+    const list = document.getElementById('options-list');
+    list.style.outline = '1px solid rgba(59,142,240,0.5)';
+    list.style.borderRadius = '10px';
+    setTimeout(() => { list.style.outline = ''; list.style.borderRadius = ''; }, 900);
+    return;
+  }
+  if (currentQ < QUESTIONS.length - 1) { currentQ++; renderQ(); }
+  else calcResult();
+}
+
+function prevQ() { if (currentQ > 0) { currentQ--; renderQ(); } }
+
+function calcResult() {
+  const totals = {};
+  QUESTIONS.forEach((q, qi) => {
+    const ai = answers[qi];
+    if (ai === undefined) return;
+    Object.entries(q.opts[ai].scores).forEach(([k,v]) => { totals[k] = (totals[k]||0) + v; });
+  });
+  const top = Object.entries(totals).sort((a,b) => b[1]-a[1])[0][0];
+  showResult(top, null);
+}
+
+function showResult(typeKey, extra) {
+  const t = TYPES[typeKey] || TYPES['C'];
+  document.getElementById('result-type').innerHTML = `${t.ru}<br><em>${t.name}</em>`;
+  document.getElementById('result-subtitle').textContent = t.sub;
+  document.getElementById('result-desc').textContent = extra ? (extra + ' ' + t.desc) : t.desc;
+  document.getElementById('result-celebs').textContent = t.celebs;
+
+  const grid = document.getElementById('recs-grid');
+  grid.innerHTML = '';
+  t.recs.forEach(([label, val]) => {
+    const div = document.createElement('div');
+    div.className = 'rec-card';
+    div.innerHTML = `<div class="rec-label">${label}</div><div class="rec-val">${val}</div>`;
+    grid.appendChild(div);
+  });
+
+  goScreen('screen-result');
+}
+
+function handlePhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    const comma = dataUrl.indexOf(',');
+    photoBase64 = dataUrl.slice(comma + 1);
+    photoMime = file.type || 'image/jpeg';
+    const img = document.getElementById('preview-img');
+    img.src = dataUrl;
+    document.getElementById('preview-wrap').style.display = 'block';
+    document.getElementById('btn-analyze').disabled = false;
+    document.getElementById('photo-error').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzePhoto() {
+  if (!photoBase64) return;
+
+  if (!WORKER_URL) {
+    document.getElementById('photo-error').style.display = 'block';
+    document.getElementById('photo-error').textContent = 'Фото-анализ ещё не подключён. Укажите адрес Worker в настройках (WORKER_URL) или воспользуйтесь тестом по вопросам.';
+    return;
+  }
+
+  goScreen('screen-loading');
+  document.getElementById('loading-title').textContent = 'Анализирую черты';
+
+  try {
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: photoBase64, mime: photoMime })
+    });
+    if (!resp.ok) throw new Error('worker ' + resp.status);
+    const data = await resp.json();
+    const raw = data.content?.find(b => b.type === 'text')?.text || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+    const typeKey = TYPES[parsed.type] ? parsed.type : 'C';
+    showResult(typeKey, parsed.observations || null);
+  } catch (e) {
+    goScreen('screen-photo');
+    document.getElementById('photo-error').style.display = 'block';
+    document.getElementById('photo-error').textContent = 'Не удалось проанализировать фото. Убедись, что это изображение лица, и попробуй ещё раз.';
+  }
+}
+
+function restart() {
+  answers = []; currentQ = 0;
+  photoBase64 = null; photoMime = null;
+  document.getElementById('preview-wrap').style.display = 'none';
+  document.getElementById('preview-img').src = '';
+  document.getElementById('photo-input').value = '';
+  document.getElementById('btn-analyze').disabled = true;
+  goScreen('screen-home');
+}
+</script>
+</body>
+</html>
