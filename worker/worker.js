@@ -1,14 +1,20 @@
 /**
- * Cloudflare Worker — прокси для фото-анализа Kibbe.
+ * Cloudflare Worker — бэкенд для теста Kibbe.
  *
- * Зачем нужен: браузер не может безопасно обращаться к API Anthropic
- * (ключ был бы виден всем + CORS блокирует запрос). Worker держит ключ
- * в секрете, сам формирует запрос и отдаёт результат фронтенду.
+ * Делает две вещи:
+ *  1) Проксирует фото-анализ в Anthropic (прячет API-ключ + обходит CORS).
+ *  2) Принимает лиды и шлёт уведомление Лизе в Telegram.
  *
- * Переменные окружения (Settings → Variables and Secrets в дашборде Cloudflare):
- *   ANTHROPIC_API_KEY  — секрет, твой ключ от console.anthropic.com (обязательно)
- *   ALLOWED_ORIGIN     — адрес твоего сайта, напр. https://username.github.io
- *                        (необязательно; по умолчанию '*' — разрешены все)
+ * Переменные окружения (Settings → Variables and Secrets):
+ *   ANTHROPIC_API_KEY   — секрет, ключ console.anthropic.com (для фото)
+ *   TELEGRAM_BOT_TOKEN  — секрет, токен бота от @BotFather   (для лидов)
+ *   TELEGRAM_CHAT_ID    — секрет/текст, chat_id Лизы          (для лидов)
+ *   ALLOWED_ORIGIN      — необязательно, напр. https://kibbe.omanpan.org
+ *                         (по умолчанию '*')
+ *
+ * Тип запроса определяется телом POST:
+ *   { image, mime }  → фото-анализ
+ *   { lead: {...} }  → отправка лида в Telegram
  */
 
 const MODEL = 'claude-sonnet-4-6';
@@ -38,6 +44,105 @@ function json(body, status, env) {
   });
 }
 
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+/* ── Лид → Telegram ── */
+async function handleLead(payload, env) {
+  if (!env.TELEGRAM_BOT_TOKEN || !env.TELEGRAM_CHAT_ID) {
+    return json({ error: 'Telegram is not configured' }, 500, env);
+  }
+  const lead = payload.lead || {};
+  const name = String(lead.name || '').slice(0, 200);
+  const contact = String(lead.contact || '').slice(0, 200);
+  const type = String(lead.type || '').slice(0, 100);
+  const mode = lead.mode === 'photo' ? 'по фото' : 'по вопросам';
+
+  if (!name && !contact) {
+    return json({ error: 'Empty lead' }, 400, env);
+  }
+
+  const text =
+    '🎯 <b>Новый лид · тест Кибби</b>\n\n' +
+    '👤 Имя: ' + escapeHtml(name || '—') + '\n' +
+    '📩 Контакт: ' + escapeHtml(contact || '—') + '\n' +
+    '✨ Типаж: ' + escapeHtml(type || '—') + '\n' +
+    '🧭 Способ: ' + escapeHtml(mode);
+
+  try {
+    const tg = await fetch(
+      'https://api.telegram.org/bot' + env.TELEGRAM_BOT_TOKEN + '/sendMessage',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: env.TELEGRAM_CHAT_ID,
+          text,
+          parse_mode: 'HTML',
+          disable_web_page_preview: true,
+        }),
+      }
+    );
+    if (!tg.ok) {
+      const detail = await tg.text();
+      return json({ error: 'Telegram error', detail }, 502, env);
+    }
+    return json({ ok: true }, 200, env);
+  } catch (e) {
+    return json({ error: 'Telegram request failed' }, 502, env);
+  }
+}
+
+/* ── Фото → Anthropic ── */
+async function handlePhoto(payload, env) {
+  if (!env.ANTHROPIC_API_KEY) {
+    return json({ error: 'Server misconfigured: ANTHROPIC_API_KEY is not set' }, 500, env);
+  }
+  const image = payload.image;
+  const mime = payload.mime || 'image/jpeg';
+
+  if (!image || typeof image !== 'string') {
+    return json({ error: 'Missing image data' }, 400, env);
+  }
+  if (!ALLOWED_MIME.includes(mime)) {
+    return json({ error: 'Unsupported image type' }, 400, env);
+  }
+  if (image.length > 21_000_000) {
+    return json({ error: 'Image too large' }, 413, env);
+  }
+
+  try {
+    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mime, data: image } },
+            { type: 'text', text: 'Определи типаж по Кибби.' },
+          ],
+        }],
+      }),
+    });
+    const data = await upstream.json();
+    return json(data, upstream.status, env);
+  } catch (e) {
+    return json({ error: 'Upstream request failed' }, 502, env);
+  }
+}
+
 export default {
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
@@ -45,9 +150,6 @@ export default {
     }
     if (request.method !== 'POST') {
       return json({ error: 'Method not allowed' }, 405, env);
-    }
-    if (!env.ANTHROPIC_API_KEY) {
-      return json({ error: 'Server misconfigured: ANTHROPIC_API_KEY is not set' }, 500, env);
     }
 
     let payload;
@@ -57,46 +159,9 @@ export default {
       return json({ error: 'Invalid JSON body' }, 400, env);
     }
 
-    const image = payload && payload.image;
-    const mime = (payload && payload.mime) || 'image/jpeg';
-
-    if (!image || typeof image !== 'string') {
-      return json({ error: 'Missing image data' }, 400, env);
+    if (payload && payload.lead) {
+      return handleLead(payload, env);
     }
-    if (!ALLOWED_MIME.includes(mime)) {
-      return json({ error: 'Unsupported image type' }, 400, env);
-    }
-    // Грубая защита от слишком больших картинок (~15 МБ в base64).
-    if (image.length > 21_000_000) {
-      return json({ error: 'Image too large' }, 413, env);
-    }
-
-    try {
-      const upstream = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': env.ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          max_tokens: 1000,
-          system: SYSTEM_PROMPT,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'image', source: { type: 'base64', media_type: mime, data: image } },
-              { type: 'text', text: 'Определи типаж по Кибби.' },
-            ],
-          }],
-        }),
-      });
-
-      const data = await upstream.json();
-      return json(data, upstream.status, env);
-    } catch (e) {
-      return json({ error: 'Upstream request failed' }, 502, env);
-    }
+    return handlePhoto(payload, env);
   },
 };

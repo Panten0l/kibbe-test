@@ -418,6 +418,44 @@ body {
 }
 .btn-cta:hover { opacity: 0.9; transform: translateY(-1px); }
 
+/* ── Lead form ── */
+.lead-card {
+  width: 100%;
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 20px; padding: 1.75rem;
+  margin-bottom: 1.5rem;
+}
+.lead-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 300; margin-bottom: 0.4rem; }
+.lead-desc { font-size: 13px; color: var(--white40); line-height: 1.6; margin-bottom: 1.25rem; }
+.lead-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.85rem 1rem;
+  color: var(--white);
+  font-size: 14px; font-family: 'Inter', sans-serif;
+  margin-bottom: 10px;
+  transition: border-color 0.18s, background 0.18s;
+}
+.lead-input::placeholder { color: var(--white40); }
+.lead-input:focus { outline: none; border-color: rgba(59,142,240,0.55); background: rgba(59,142,240,0.06); }
+.btn-lead {
+  width: 100%; margin-top: 4px;
+  background: linear-gradient(135deg, var(--blue-dk), var(--blue));
+  color: white; border: none; border-radius: 12px;
+  padding: 0.9rem 1.25rem; font-size: 14px; font-weight: 500;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  box-shadow: 0 4px 20px rgba(59,142,240,0.3);
+  transition: opacity 0.15s, transform 0.12s;
+}
+.btn-lead:hover { opacity: 0.92; }
+.btn-lead:active { transform: scale(0.98); }
+.btn-lead:disabled { opacity: 0.5; cursor: default; }
+.lead-done { font-size: 14px; color: var(--blue-lt); line-height: 1.6; text-align: center; padding: 0.5rem 0; display: none; }
+.lead-error { font-size: 12px; color: #FF8080; margin-top: 8px; display: none; }
+
 .result-footer { display: flex; gap: 10px; width: 100%; }
 .btn-restart { background: var(--glass); border: 1px solid var(--border); color: var(--white70); padding: 0.8rem 1.5rem; border-radius: 12px; cursor: pointer; font-size: 14px; font-family: 'Inter', sans-serif; transition: background 0.15s; }
 .btn-restart:hover { background: var(--glass2); }
@@ -494,7 +532,7 @@ body {
     </button>
   </div>
 
-  <p class="home-note fade-up delay-4">Тест занимает 3–5 минут · Результат сохраняется</p>
+  <p class="home-note fade-up delay-4">Тест занимает 3–5 минут · 13 типажей · точный результат</p>
 </div>
 
 <!-- ══════ QUIZ ══════ -->
@@ -581,6 +619,18 @@ body {
   <div class="celebs-wrap fade-up">
     <div class="celebs-label">Звёзды с твоим типажом</div>
     <div class="celebs-list" id="result-celebs"></div>
+  </div>
+
+  <div class="lead-card fade-up">
+    <div class="lead-title">Хочешь персональный разбор?</div>
+    <div class="lead-desc">Оставь имя и контакт — Лиза напишет тебе и поможет собрать гардероб под твой типаж.</div>
+    <div id="lead-form">
+      <input class="lead-input" id="lead-name" type="text" placeholder="Имя" autocomplete="name">
+      <input class="lead-input" id="lead-contact" type="text" placeholder="Telegram / телефон / e-mail" autocomplete="off">
+      <button class="btn-lead" id="lead-submit" onclick="sendLead()">Получить разбор</button>
+      <div class="lead-error" id="lead-error"></div>
+    </div>
+    <div class="lead-done" id="lead-done">✓ Спасибо! Лиза скоро свяжется с тобой.</div>
   </div>
 
   <div class="cta-card fade-up">
@@ -746,6 +796,7 @@ let answers = [];
 let currentQ = 0;
 let photoBase64 = null;
 let photoMime = null;
+let currentMode = 'quiz';
 
 function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -819,11 +870,15 @@ function calcResult() {
     Object.entries(q.opts[ai].scores).forEach(([k,v]) => { totals[k] = (totals[k]||0) + v; });
   });
   const top = Object.entries(totals).sort((a,b) => b[1]-a[1])[0][0];
+  currentMode = 'quiz';
   showResult(top, null);
 }
 
+let currentResultType = '';
+
 function showResult(typeKey, extra) {
   const t = TYPES[typeKey] || TYPES['C'];
+  currentResultType = `${t.ru} (${t.name})`;
   document.getElementById('result-type').innerHTML = `${t.ru}<br><em>${t.name}</em>`;
   document.getElementById('result-subtitle').textContent = t.sub;
   document.getElementById('result-desc').textContent = extra ? (extra + ' ' + t.desc) : t.desc;
@@ -838,7 +893,47 @@ function showResult(typeKey, extra) {
     grid.appendChild(div);
   });
 
+  // сброс формы лида на случай повторного прохождения
+  document.getElementById('lead-form').style.display = 'block';
+  document.getElementById('lead-done').style.display = 'none';
+  document.getElementById('lead-error').style.display = 'none';
+  document.getElementById('lead-name').value = '';
+  document.getElementById('lead-contact').value = '';
+  document.getElementById('lead-submit').disabled = false;
+  document.getElementById('lead-submit').textContent = 'Получить разбор';
+
   goScreen('screen-result');
+}
+
+async function sendLead() {
+  const name = document.getElementById('lead-name').value.trim();
+  const contact = document.getElementById('lead-contact').value.trim();
+  const err = document.getElementById('lead-error');
+  if (!name || !contact) {
+    err.style.display = 'block';
+    err.textContent = 'Заполни имя и контакт.';
+    return;
+  }
+  err.style.display = 'none';
+  const btn = document.getElementById('lead-submit');
+  btn.disabled = true;
+  btn.textContent = 'Отправляю…';
+
+  try {
+    const resp = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead: { name, contact, type: currentResultType, mode: currentMode } })
+    });
+    if (!resp.ok) throw new Error('lead ' + resp.status);
+    document.getElementById('lead-form').style.display = 'none';
+    document.getElementById('lead-done').style.display = 'block';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Получить разбор';
+    err.style.display = 'block';
+    err.textContent = 'Не удалось отправить. Попробуй ещё раз или напиши Лизе в Instagram.';
+  }
 }
 
 function handlePhoto(input) {
@@ -861,6 +956,7 @@ function handlePhoto(input) {
 
 async function analyzePhoto() {
   if (!photoBase64) return;
+  currentMode = 'photo';
 
   if (!WORKER_URL) {
     document.getElementById('photo-error').style.display = 'block';
