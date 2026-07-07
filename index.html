@@ -384,6 +384,11 @@ body {
 .rec-label { font-size: 10px; color: var(--blue-lt); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
 .rec-val { font-size: 13px; color: var(--white70); line-height: 1.4; }
 
+.looks-wrap { width: 100%; margin-bottom: 1.75rem; }
+.looks-label { font-size: 11px; letter-spacing: 0.1em; color: var(--white40); text-transform: uppercase; margin-bottom: 0.9rem; }
+.looks-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.35); }
+.looks-img { width: 100%; display: block; }
+
 .celebs-wrap { width: 100%; margin-bottom: 2rem; }
 .celebs-label { font-size: 11px; color: var(--white40); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
 .celebs-list { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 300; color: var(--white70); letter-spacing: 0.01em; }
@@ -651,6 +656,11 @@ textarea.lead-input { resize: vertical; min-height: 72px; line-height: 1.5; }
 
   <div class="recs-title">Рекомендации стилиста</div>
   <div class="recs-grid" id="recs-grid"></div>
+
+  <div class="looks-wrap fade-up" id="looks-wrap" style="display:none">
+    <div class="looks-label">Примеры образов для твоего типажа</div>
+    <div class="looks-frame"><img class="looks-img" id="looks-img" alt="Примеры образов для твоего типажа" loading="lazy"></div>
+  </div>
 
   <div class="celebs-wrap fade-up">
     <div class="celebs-label">Звёзды с твоим типажом</div>
@@ -958,8 +968,16 @@ function calcResult() {
 
 let currentResultType = '';
 
+const TYPE_IMG = {
+  D: 'dramatic', SD: 'soft-dramatic', FD: 'flamboyant-dramatic',
+  N: 'natural', SN: 'soft-natural', FN: 'flamboyant-natural',
+  C: 'classic', SC: 'soft-classic', DC: 'dramatic-classic',
+  R: 'romantic', SR: 'soft-romantic', G: 'gamine', FG: 'flamboyant-gamine'
+};
+
 function showResult(typeKey, extra) {
   const t = TYPES[typeKey] || TYPES['C'];
+  const realKey = TYPES[typeKey] ? typeKey : 'C';
   currentResultType = `${t.ru} (${t.name})`;
   document.getElementById('result-type').innerHTML = `${t.ru}<br><em>${t.name}</em>`;
   document.getElementById('result-subtitle').textContent = t.sub;
@@ -974,6 +992,19 @@ function showResult(typeKey, extra) {
     div.innerHTML = `<div class="rec-label">${label}</div><div class="rec-val">${val}</div>`;
     grid.appendChild(div);
   });
+
+  // картинка с образами по типажу
+  const looksWrap = document.getElementById('looks-wrap');
+  const looksImg = document.getElementById('looks-img');
+  const slug = TYPE_IMG[realKey];
+  if (slug) {
+    looksImg.onerror = () => { looksWrap.style.display = 'none'; };
+    looksImg.onload = () => { looksWrap.style.display = 'block'; };
+    looksWrap.style.display = 'none';
+    looksImg.src = 'images/' + slug + '.jpg';
+  } else {
+    looksWrap.style.display = 'none';
+  }
 
   sendLeadAuto();
   goScreen('screen-result');
