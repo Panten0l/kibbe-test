@@ -442,6 +442,18 @@ body {
 .lead-input::placeholder { color: var(--white40); }
 .lead-input:focus { outline: none; border-color: rgba(59,142,240,0.55); background: rgba(59,142,240,0.06); }
 textarea.lead-input { resize: vertical; min-height: 72px; line-height: 1.5; }
+.platform-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.platform-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 12px; padding: 0.8rem;
+  color: var(--white70); font-size: 14px; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+.platform-btn:hover { background: rgba(59,142,240,0.07); }
+.platform-btn.selected { background: rgba(59,142,240,0.12); border-color: rgba(59,142,240,0.55); color: var(--white); }
 .btn-lead {
   width: 100%; margin-top: 4px;
   background: linear-gradient(135deg, var(--blue-dk), var(--blue));
@@ -544,7 +556,11 @@ textarea.lead-input { resize: vertical; min-height: 72px; line-height: 1.5; }
     <div class="q-hint">Оставь имя и контакт — по результату теста Лиза подготовит для тебя персональные рекомендации и напишет.</div>
 
     <input class="lead-input" id="intro-name" type="text" placeholder="Имя" autocomplete="name">
-    <input class="lead-input" id="intro-contact" type="text" placeholder="Telegram / телефон / e-mail" autocomplete="off">
+    <div class="platform-row">
+      <button type="button" class="platform-btn selected" id="pf-ig" onclick="selectPlatform('ig')">Instagram</button>
+      <button type="button" class="platform-btn" id="pf-tg" onclick="selectPlatform('tg')">Telegram</button>
+    </div>
+    <input class="lead-input" id="intro-handle" type="text" placeholder="Твой ник в Instagram, напр. @username" autocomplete="off">
     <textarea class="lead-input" id="intro-about" placeholder="Пара слов о себе: стиль жизни, что хочешь от образа (необязательно)" rows="3"></textarea>
     <div class="lead-error" id="intro-error"></div>
 
@@ -820,6 +836,16 @@ function goScreen(id) {
   });
 }
 
+let selectedPlatform = 'ig';
+
+function selectPlatform(p) {
+  selectedPlatform = p;
+  document.getElementById('pf-ig').classList.toggle('selected', p === 'ig');
+  document.getElementById('pf-tg').classList.toggle('selected', p === 'tg');
+  document.getElementById('intro-handle').placeholder =
+    p === 'tg' ? 'Твой ник в Telegram, напр. @username' : 'Твой ник в Instagram, напр. @username';
+}
+
 function goIntro(mode) {
   pendingMode = mode;
   document.getElementById('intro-error').style.display = 'none';
@@ -828,14 +854,17 @@ function goIntro(mode) {
 
 function introContinue() {
   const name = document.getElementById('intro-name').value.trim();
-  const contact = document.getElementById('intro-contact').value.trim();
+  const handle = document.getElementById('intro-handle').value.trim().replace(/^@+/, '').replace(/\s+/g, '');
   const about = document.getElementById('intro-about').value.trim();
   const err = document.getElementById('intro-error');
-  if (!name || !contact) {
+  if (!name || !handle) {
     err.style.display = 'block';
-    err.textContent = 'Заполни имя и контакт, чтобы продолжить.';
+    err.textContent = 'Заполни имя и ник, чтобы продолжить.';
     return;
   }
+  const contact = selectedPlatform === 'tg'
+    ? 'Telegram: @' + handle + ' · https://t.me/' + handle
+    : 'Instagram: @' + handle + ' · https://instagram.com/' + handle;
   err.style.display = 'none';
   leadInfo = { name, contact, about };
   leadSent = false;
@@ -1007,8 +1036,9 @@ function restart() {
   leadInfo = { name: '', contact: '', about: '' };
   leadSent = false;
   document.getElementById('intro-name').value = '';
-  document.getElementById('intro-contact').value = '';
+  document.getElementById('intro-handle').value = '';
   document.getElementById('intro-about').value = '';
+  selectPlatform('ig');
   document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('preview-img').src = '';
   document.getElementById('photo-input').value = '';
