@@ -441,6 +441,7 @@ body {
 }
 .lead-input::placeholder { color: var(--white40); }
 .lead-input:focus { outline: none; border-color: rgba(59,142,240,0.55); background: rgba(59,142,240,0.06); }
+textarea.lead-input { resize: vertical; min-height: 72px; line-height: 1.5; }
 .btn-lead {
   width: 100%; margin-top: 4px;
   background: linear-gradient(135deg, var(--blue-dk), var(--blue));
@@ -518,13 +519,13 @@ body {
   </div>
 
   <div class="mode-row fade-up delay-3">
-    <button class="mode-btn" onclick="startQuiz()">
+    <button class="mode-btn" onclick="goIntro('quiz')">
       <span class="mode-arrow">↗</span>
       <div class="mode-icon">✦</div>
       <div class="mode-title">Ответить на вопросы</div>
       <div class="mode-desc">10 вопросов о внешности — без фото</div>
     </button>
-    <button class="mode-btn" onclick="goScreen('screen-photo')">
+    <button class="mode-btn" onclick="goIntro('photo')">
       <span class="mode-arrow">↗</span>
       <div class="mode-icon">⬡</div>
       <div class="mode-title">Загрузить фото</div>
@@ -533,6 +534,25 @@ body {
   </div>
 
   <p class="home-note fade-up delay-4">Тест занимает 3–5 минут · 13 типажей · точный результат</p>
+</div>
+
+<!-- ══════ INTRO (данные о себе) ══════ -->
+<div id="screen-intro" class="screen">
+  <div class="glass-card fade-up" style="width:100%">
+    <div class="q-label">Перед началом</div>
+    <div class="q-text" style="margin-bottom:0.5rem">Расскажи немного о себе</div>
+    <div class="q-hint">Оставь имя и контакт — по результату теста Лиза подготовит для тебя персональные рекомендации и напишет.</div>
+
+    <input class="lead-input" id="intro-name" type="text" placeholder="Имя" autocomplete="name">
+    <input class="lead-input" id="intro-contact" type="text" placeholder="Telegram / телефон / e-mail" autocomplete="off">
+    <textarea class="lead-input" id="intro-about" placeholder="Пара слов о себе: стиль жизни, что хочешь от образа (необязательно)" rows="3"></textarea>
+    <div class="lead-error" id="intro-error"></div>
+
+    <div class="nav-row" style="margin-top:1.25rem">
+      <button class="btn btn-ghost" onclick="goScreen('screen-home')">← Назад</button>
+      <button class="btn btn-primary" onclick="introContinue()">Продолжить →</button>
+    </div>
+  </div>
 </div>
 
 <!-- ══════ QUIZ ══════ -->
@@ -621,21 +641,9 @@ body {
     <div class="celebs-list" id="result-celebs"></div>
   </div>
 
-  <div class="lead-card fade-up">
-    <div class="lead-title">Хочешь персональный разбор?</div>
-    <div class="lead-desc">Оставь имя и контакт — Лиза напишет тебе и поможет собрать гардероб под твой типаж.</div>
-    <div id="lead-form">
-      <input class="lead-input" id="lead-name" type="text" placeholder="Имя" autocomplete="name">
-      <input class="lead-input" id="lead-contact" type="text" placeholder="Telegram / телефон / e-mail" autocomplete="off">
-      <button class="btn-lead" id="lead-submit" onclick="sendLead()">Получить разбор</button>
-      <div class="lead-error" id="lead-error"></div>
-    </div>
-    <div class="lead-done" id="lead-done">✓ Спасибо! Лиза скоро свяжется с тобой.</div>
-  </div>
-
   <div class="cta-card fade-up">
-    <div class="cta-title">Готова к своему гардеробу?</div>
-    <div class="cta-desc">Лиза поможет собрать образы, которые будут работать именно на твою внешность — от повседневного до особых событий.</div>
+    <div class="cta-title">Твой образ готов ✨</div>
+    <div class="cta-desc">Лиза уже получила твой результат и скоро напишет тебе. А пока можешь написать ей сама — она поможет собрать гардероб под твой типаж.</div>
     <a href="https://www.instagram.com/_lizakuncevich/" target="_blank" class="btn-cta">Написать Лизе → Instagram</a>
   </div>
 
@@ -797,6 +805,9 @@ let currentQ = 0;
 let photoBase64 = null;
 let photoMime = null;
 let currentMode = 'quiz';
+let pendingMode = 'quiz';
+let leadInfo = { name: '', contact: '', about: '' };
+let leadSent = false;
 
 function goScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -807,6 +818,48 @@ function goScreen(id) {
     el.offsetHeight;
     el.style.animation = '';
   });
+}
+
+function goIntro(mode) {
+  pendingMode = mode;
+  document.getElementById('intro-error').style.display = 'none';
+  goScreen('screen-intro');
+}
+
+function introContinue() {
+  const name = document.getElementById('intro-name').value.trim();
+  const contact = document.getElementById('intro-contact').value.trim();
+  const about = document.getElementById('intro-about').value.trim();
+  const err = document.getElementById('intro-error');
+  if (!name || !contact) {
+    err.style.display = 'block';
+    err.textContent = 'Заполни имя и контакт, чтобы продолжить.';
+    return;
+  }
+  err.style.display = 'none';
+  leadInfo = { name, contact, about };
+  leadSent = false;
+  if (pendingMode === 'photo') {
+    goScreen('screen-photo');
+  } else {
+    startQuiz();
+  }
+}
+
+function sendLeadAuto() {
+  if (leadSent) return;
+  leadSent = true;
+  fetch(WORKER_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lead: {
+      name: leadInfo.name,
+      contact: leadInfo.contact,
+      about: leadInfo.about,
+      type: currentResultType,
+      mode: currentMode
+    }})
+  }).catch(() => { leadSent = false; });
 }
 
 function startQuiz() {
@@ -893,47 +946,8 @@ function showResult(typeKey, extra) {
     grid.appendChild(div);
   });
 
-  // сброс формы лида на случай повторного прохождения
-  document.getElementById('lead-form').style.display = 'block';
-  document.getElementById('lead-done').style.display = 'none';
-  document.getElementById('lead-error').style.display = 'none';
-  document.getElementById('lead-name').value = '';
-  document.getElementById('lead-contact').value = '';
-  document.getElementById('lead-submit').disabled = false;
-  document.getElementById('lead-submit').textContent = 'Получить разбор';
-
+  sendLeadAuto();
   goScreen('screen-result');
-}
-
-async function sendLead() {
-  const name = document.getElementById('lead-name').value.trim();
-  const contact = document.getElementById('lead-contact').value.trim();
-  const err = document.getElementById('lead-error');
-  if (!name || !contact) {
-    err.style.display = 'block';
-    err.textContent = 'Заполни имя и контакт.';
-    return;
-  }
-  err.style.display = 'none';
-  const btn = document.getElementById('lead-submit');
-  btn.disabled = true;
-  btn.textContent = 'Отправляю…';
-
-  try {
-    const resp = await fetch(WORKER_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lead: { name, contact, type: currentResultType, mode: currentMode } })
-    });
-    if (!resp.ok) throw new Error('lead ' + resp.status);
-    document.getElementById('lead-form').style.display = 'none';
-    document.getElementById('lead-done').style.display = 'block';
-  } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Получить разбор';
-    err.style.display = 'block';
-    err.textContent = 'Не удалось отправить. Попробуй ещё раз или напиши Лизе в Instagram.';
-  }
 }
 
 function handlePhoto(input) {
@@ -990,6 +1004,11 @@ async function analyzePhoto() {
 function restart() {
   answers = []; currentQ = 0;
   photoBase64 = null; photoMime = null;
+  leadInfo = { name: '', contact: '', about: '' };
+  leadSent = false;
+  document.getElementById('intro-name').value = '';
+  document.getElementById('intro-contact').value = '';
+  document.getElementById('intro-about').value = '';
   document.getElementById('preview-wrap').style.display = 'none';
   document.getElementById('preview-img').src = '';
   document.getElementById('photo-input').value = '';

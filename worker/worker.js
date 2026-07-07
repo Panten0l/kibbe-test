@@ -59,6 +59,7 @@ async function handleLead(payload, env) {
   const lead = payload.lead || {};
   const name = String(lead.name || '').slice(0, 200);
   const contact = String(lead.contact || '').slice(0, 200);
+  const about = String(lead.about || '').slice(0, 1000);
   const type = String(lead.type || '').slice(0, 100);
   const mode = lead.mode === 'photo' ? 'по фото' : 'по вопросам';
 
@@ -71,7 +72,8 @@ async function handleLead(payload, env) {
     '👤 Имя: ' + escapeHtml(name || '—') + '\n' +
     '📩 Контакт: ' + escapeHtml(contact || '—') + '\n' +
     '✨ Типаж: ' + escapeHtml(type || '—') + '\n' +
-    '🧭 Способ: ' + escapeHtml(mode);
+    '🧭 Способ: ' + escapeHtml(mode) +
+    (about ? '\n📝 О себе: ' + escapeHtml(about) : '');
 
   try {
     const tg = await fetch(
