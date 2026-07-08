@@ -3,8 +3,7 @@ main = "worker.js"
 compatibility_date = "2025-01-01"
 
 # Адрес сайта, которому разрешено обращаться к Worker.
-# Замени на свой GitHub Pages URL после первого деплоя.
-# Секрет ANTHROPIC_API_KEY задаётся отдельно командой:
-#   npx wrangler secret put ANTHROPIC_API_KEY
+# Секреты (ANTHROPIC_API_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID)
+# задаются в дашборде Cloudflare → Settings → Variables and Secrets.
 [vars]
 ALLOWED_ORIGIN = "https://kibbe.omanpan.org"
