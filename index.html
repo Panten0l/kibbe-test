@@ -386,8 +386,23 @@ body {
 
 .looks-wrap { width: 100%; margin-bottom: 1.75rem; }
 .looks-label { font-size: 11px; letter-spacing: 0.1em; color: var(--white40); text-transform: uppercase; margin-bottom: 0.9rem; }
-.looks-frame { border-radius: 16px; overflow: hidden; border: 1px solid var(--border); background: #fff; box-shadow: 0 12px 32px rgba(0,0,0,0.35); }
-.looks-img { width: 100%; display: block; }
+.looks-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.looks-tab {
+  flex: 1; background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.6rem 0.4rem; color: var(--white70);
+  font-size: 13px; cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: background 0.18s, border-color 0.18s, color 0.18s;
+}
+.looks-tab:hover { background: rgba(59,142,240,0.07); }
+.looks-tab.selected { background: rgba(59,142,240,0.14); border-color: rgba(59,142,240,0.55); color: var(--white); }
+.looks-frame {
+  border-radius: 16px; overflow: hidden;
+  border: 1px solid var(--border); background: #fff;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+  display: flex; justify-content: center;
+}
+.looks-img { max-width: 100%; max-height: 78vh; width: auto; display: block; }
 
 .celebs-wrap { width: 100%; margin-bottom: 2rem; }
 .celebs-label { font-size: 11px; color: var(--white40); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 8px; }
@@ -658,8 +673,13 @@ textarea.lead-input { resize: vertical; min-height: 72px; line-height: 1.5; }
   <div class="recs-grid" id="recs-grid"></div>
 
   <div class="looks-wrap fade-up" id="looks-wrap" style="display:none">
-    <div class="looks-label">Примеры образов для твоего типажа</div>
-    <div class="looks-frame"><img class="looks-img" id="looks-img" alt="Примеры образов для твоего типажа" loading="lazy"></div>
+    <div class="looks-label">Образы для твоего типажа</div>
+    <div class="looks-tabs">
+      <button type="button" class="looks-tab selected" data-occ="work" onclick="showBoard('work')">Работа</button>
+      <button type="button" class="looks-tab" data-occ="walk" onclick="showBoard('walk')">Прогулка</button>
+      <button type="button" class="looks-tab" data-occ="evening" onclick="showBoard('evening')">Вечерний</button>
+    </div>
+    <div class="looks-frame"><img class="looks-img" id="looks-img" alt="Образ для твоего типажа" loading="lazy"></div>
   </div>
 
   <div class="celebs-wrap fade-up">
@@ -697,7 +717,7 @@ const QUESTIONS = [
       { text: "Вытянутый, длинный, угловатый", scores: { D:3, FD:2 } },
       { text: "Мягкий, округлый, выраженно женственный", scores: { R:3, SN:1, SD:1 } },
       { text: "Прямой, симметричный, хорошо пропорциональный", scores: { C:3, DC:2 } },
-      { text: "Компактный, смешанный — острое соседствует с мягким", scores: { G:3, FG:2 } },
+      { text: "Компактный, смешанный — острое соседствует с мягким", scores: { G:3, FG:2, SG:2 } },
       { text: "Свободный, слегка широкий, спортивный", scores: { N:3, FN:2 } }
     ]
   },
@@ -706,7 +726,7 @@ const QUESTIONS = [
     text: "Какая у тебя линия плеч?",
     hint: "Оцени ширину и форму — смотри в зеркало анфас",
     opts: [
-      { text: "Узкие, покатые или хрупкие", scores: { R:2, G:1, C:1 } },
+      { text: "Узкие, покатые или хрупкие", scores: { R:2, G:1, C:1, SG:2 } },
       { text: "Широкие и прямые — плечи заметны", scores: { D:2, FN:2, FD:1 } },
       { text: "Умеренной ширины, сбалансированные", scores: { N:2, C:2, DC:1 } },
       { text: "Острые, чёткие, выраженные", scores: { D:3, FD:2 } },
@@ -720,7 +740,7 @@ const QUESTIONS = [
     opts: [
       { text: "Ярко выраженная талия, округлые бёдра — настоящая «восьмёрка»", scores: { R:3, SR:2 } },
       { text: "Прямая фигура — талия почти не выражена", scores: { D:2, G:2, N:1 } },
-      { text: "Умеренные изгибы, фигура пропорциональна", scores: { C:3, DC:2, SC:2 } },
+      { text: "Умеренные изгибы, фигура пропорциональна", scores: { C:3, DC:2, SC:2, SG:2 } },
       { text: "Длинная талия, ноги длинные, линии вытянутые", scores: { D:2, FD:2, N:1 } },
       { text: "Небольшие изгибы, в целом скорее прямая", scores: { SN:2, SD:1, N:1 } }
     ]
@@ -732,7 +752,7 @@ const QUESTIONS = [
     opts: [
       { text: "Высокая — 170 см и выше", scores: { D:2, FD:2, FN:1 } },
       { text: "Средний — 160–169 см", scores: { C:2, N:1, SN:1 } },
-      { text: "Невысокая — до 160 см", scores: { G:2, FG:2, R:1 } },
+      { text: "Невысокая — до 160 см", scores: { G:2, FG:2, R:1, SG:3 } },
       { text: "Очень высокая — 175 см и выше", scores: { D:3, FD:2 } }
     ]
   },
@@ -742,9 +762,9 @@ const QUESTIONS = [
     hint: "",
     opts: [
       { text: "Лицо вытянутое, черты резкие и чёткие", scores: { D:3, FD:2 } },
-      { text: "Лицо округлое, черты мягкие и «пухлые»", scores: { R:3, SR:2 } },
+      { text: "Лицо округлое, черты мягкие и «пухлые»", scores: { R:3, SR:2, SG:2 } },
       { text: "Симметричные, ровные черты без явного характера", scores: { C:3, DC:2, SC:2 } },
-      { text: "Черты смешанные — где-то острое, где-то мягкое", scores: { G:3, FG:2 } },
+      { text: "Черты смешанные — где-то острое, где-то мягкое", scores: { G:3, FG:2, SG:1 } },
       { text: "Широкие черты, «земной» и натуральный образ", scores: { N:3, FN:2 } }
     ]
   },
@@ -754,9 +774,9 @@ const QUESTIONS = [
     hint: "",
     opts: [
       { text: "Нос прямой и чёткий, скулы выраженные", scores: { D:2, FD:2, DC:1 } },
-      { text: "Нос мягкий или небольшой, скулы округлые", scores: { R:2, SR:2, SN:1 } },
+      { text: "Нос мягкий или небольшой, скулы округлые", scores: { R:2, SR:2, SN:1, SG:2 } },
       { text: "Пропорциональный нос, умеренные скулы", scores: { C:2, SC:2 } },
-      { text: "Нос курносый или маленький, черты игривые", scores: { G:2, FG:2 } },
+      { text: "Нос курносый или маленький, черты игривые", scores: { G:2, FG:2, SG:1 } },
       { text: "Нос широкий или мясистый, черты натуральные", scores: { N:2, FN:1 } }
     ]
   },
@@ -766,9 +786,9 @@ const QUESTIONS = [
     hint: "Что говорят чаще всего — не как ты себя ощущаешь, а как видят другие",
     opts: [
       { text: "Эффектная, загадочная — взгляд задерживается сам собой", scores: { D:3, FD:2 } },
-      { text: "Очень женственная, мягкая, чувственная", scores: { R:3, SR:2 } },
+      { text: "Очень женственная, мягкая, чувственная", scores: { R:3, SR:2, SG:1 } },
       { text: "Элегантная, утончённая, классическая", scores: { C:3, SC:2, DC:1 } },
-      { text: "Энергичная, молодая, задорная", scores: { G:3, FG:2 } },
+      { text: "Энергичная, молодая, задорная", scores: { G:3, FG:2, SG:2 } },
       { text: "Спортивная, открытая, расслабленная", scores: { N:3, FN:2, SN:1 } }
     ]
   },
@@ -778,9 +798,9 @@ const QUESTIONS = [
     hint: "",
     opts: [
       { text: "Гладкие, жёсткие, структурированные — кожа, атлас", scores: { D:2, FD:1 } },
-      { text: "Мягкие, текучие, обволакивающие — шифон, шёлк, кружево", scores: { R:3, SR:2 } },
+      { text: "Мягкие, текучие, обволакивающие — шифон, шёлк, кружево", scores: { R:3, SR:2, SG:1 } },
       { text: "Классические средние — шерсть, джерси, трикотаж", scores: { C:2, N:1 } },
-      { text: "Лёгкие натуральные — хлопок, лён, с фактурой", scores: { N:2, SN:1, G:1 } },
+      { text: "Лёгкие натуральные — хлопок, лён, с фактурой", scores: { N:2, SN:1, G:1, SG:1 } },
       { text: "Объёмные, многослойные, оверсайз-фактуры", scores: { FN:2, N:1, G:1 } }
     ]
   },
@@ -790,9 +810,9 @@ const QUESTIONS = [
     hint: "Вспомни, что получаешь комплименты носишь",
     opts: [
       { text: "Крупные, геометричные, скульптурные — statement-украшения", scores: { D:3, FD:2 } },
-      { text: "Маленькие, круглые, романтичные — жемчуг, цветочки", scores: { R:3, SR:2 } },
+      { text: "Маленькие, круглые, романтичные — жемчуг, цветочки", scores: { R:3, SR:2, SG:1 } },
       { text: "Классические, сдержанные — тонкие цепочки, хупы", scores: { C:2, SC:2 } },
-      { text: "Разные, игривые, смешанные стили", scores: { G:2, FG:2 } },
+      { text: "Разные, игривые, смешанные стили", scores: { G:2, FG:2, SG:2 } },
       { text: "Крупные натуральные — дерево, этника, камни", scores: { N:2, FN:2 } }
     ]
   },
@@ -804,7 +824,7 @@ const QUESTIONS = [
       { text: "Angelina Jolie, Tilda Swinton — острые, эффектные", scores: { D:3, FD:2, SD:1 } },
       { text: "Marilyn Monroe, Salma Hayek — округлые и чувственные", scores: { R:3, SR:2 } },
       { text: "Grace Kelly, Natalie Portman — элегантность и гармония", scores: { C:3, SC:2, DC:1 } },
-      { text: "Audrey Hepburn, Emma Watson — компактность и живость", scores: { G:3, FG:2 } },
+      { text: "Audrey Hepburn, Emma Watson — компактность и живость", scores: { G:3, FG:2, SG:2 } },
       { text: "Jennifer Aniston, Julia Roberts — натуральность и лёгкость", scores: { N:3, FN:2, SN:1 } }
     ]
   }
@@ -821,9 +841,10 @@ const TYPES = {
   SC: { name:"Soft Classic", ru:"Мягкий Классик", sub:"Классик с женственными нотками", celebs:"Catherine Zeta-Jones · Jessica Alba · Eva Longoria", desc:"Классическая основа с мягкостью форм. Тебе идут приталенные вещи с нежными деталями — округлые воротники, мягкие ткани, лёгкие цветочные принты.", recs:[["Силуэт","Приталенный, мягкий"],["Детали","Округлые, нежные"],["Ткани","Шифон, мягкая шерсть"],["Принты","Мелкие цветы, горошек"],["Аксессуары","Маленькие, женственные"],["Избегай","Резкость, жёсткую геометрию"]] },
   DC: { name:"Dramatic Classic", ru:"Драматический Классик", sub:"Элегантность с оттенком силы", celebs:"Cate Blanchett · Faye Dunaway · Michelle Pfeiffer", desc:"Классическая гармония с добавлением остроты. Тебе идёт строгая классика с чёткими деталями — пиджаки с острыми плечами, минималистичные платья с характером.", recs:[["Силуэт","Чёткий, симметричный"],["Детали","Сдержанные, острые"],["Ткани","Структурные, качественные"],["Принты","Геометрия, полоска"],["Аксессуары","Минималистичные"],["Избегай","Рюши, лишние детали"]] },
   R:  { name:"Romantic", ru:"Романтик", sub:"Максимально женственный типаж", celebs:"Marilyn Monroe · Salma Hayek · Beyoncé", desc:"Твоя внешность создана для чувственности — округлые формы, мягкие черты, женственность в каждой детали. Тебе нужны вещи, которые обнимают и подчёркивают твои формы.", recs:[["Силуэт","Приталенный, облегающий"],["Детали","Кружево, воланы, рюши"],["Ткани","Шёлк, бархат, шифон"],["Принты","Цветы, мелкий горошек"],["Длина","Мини или макси"],["Избегай","Прямые, жёсткие линии"]] },
-  SR: { name:"Soft Romantic", ru:"Мягкий Романтик", sub:"Нежный и воздушный романтик", celebs:"Drew Barrymore · Kate Winslet · Mila Kunis", desc:"Ещё мягче, чем Романтик — округлые формы и хрупкая нежность. Тебе нужны воздушные, лёгкие вещи с романтичными деталями и пастельными красками.", recs:[["Силуэт","Мягкий, округлый"],["Детали","Нежные, воздушные"],["Ткани","Кружево, вуаль, шёлк"],["Принты","Мелкие цветы, пейсли"],["Аксессуары","Маленькие, деликатные"],["Избегай","Геометрию, жёсткость"]] },
+  SR: { name:"Theatrical Romantic", ru:"Театральный Романтик", sub:"Женственность с драматическим акцентом", celebs:"Vivien Leigh · Elizabeth Taylor · Rachel Weisz", desc:"Мягкая, чувственная основа с ноткой остроты. Ты миниатюрна и женственна, но с характером — тебе идут приталенные силуэты с изящными деталями, которые подчёркивают фигуру и добавляют драмы.", recs:[["Силуэт","Приталенный, женственный"],["Детали","Изящные, с акцентом"],["Ткани","Шёлк, кружево, бархат"],["Принты","Мелкие цветы, кружевные"],["Длина","Миди, по фигуре"],["Избегай","Оверсайз, грубые линии"]] },
   G:  { name:"Gamine", ru:"Гамин", sub:"Игривый, энергичный, смешанный типаж", celebs:"Audrey Hepburn · Emma Watson · Winona Ryder", desc:"Небольшая, но яркая — сочетание острого и мягкого, игривость и характер. Тебе нужны компактные, лаконичные образы с неожиданными деталями.", recs:[["Силуэт","Компактный, чёткий"],["Детали","Контрастные, острые"],["Ткани","Смешанные фактуры"],["Принты","Геометрия + цветы"],["Длина","Мини, до колена"],["Избегай","Объём и длину"]] },
-  FG: { name:"Flamboyant Gamine", ru:"Яркий Гамин", sub:"Компактный, острый, энергичный", celebs:"Jean Seberg · Liza Minnelli · Twiggy", desc:"Компактная и острая — угловатость преобладает над мягкостью. Тебе нужны короткие, угловатые, контрастные вещи с характером и неожиданными решениями.", recs:[["Силуэт","Угловатый, короткий"],["Детали","Острые, контрастные"],["Ткани","Жёсткие, смелые"],["Принты","Геометрия, полоска, клетка"],["Длина","Мини"],["Избегай","Мягкость, объём"]] }
+  FG: { name:"Flamboyant Gamine", ru:"Яркий Гамин", sub:"Компактный, острый, энергичный", celebs:"Jean Seberg · Liza Minnelli · Twiggy", desc:"Компактная и острая — угловатость преобладает над мягкостью. Тебе нужны короткие, угловатые, контрастные вещи с характером и неожиданными решениями.", recs:[["Силуэт","Угловатый, короткий"],["Детали","Острые, контрастные"],["Ткани","Жёсткие, смелые"],["Принты","Геометрия, полоска, клетка"],["Длина","Мини"],["Избегай","Мягкость, объём"]] },
+  SG: { name:"Soft Gamine", ru:"Мягкий Гамин", sub:"Миниатюрный, свежий, с мягкими чертами", celebs:"Reese Witherspoon · Zooey Deschanel · Kylie Minogue", desc:"Компактная и юная, с округлыми мягкими чертами и лёгкой игривостью. Тебе идут аккуратные образы по фигуре с милыми деталями — сочетание чёткого кроя и мягких фактур.", recs:[["Силуэт","Компактный, по фигуре"],["Детали","Милые, аккуратные"],["Ткани","Мягкие с лёгкой структурой"],["Принты","Мелкие: цветы, горошек"],["Длина","Мини, до колена"],["Избегай","Оверсайз, строгую резкость"]] }
 };
 
 let answers = [];
@@ -968,12 +989,22 @@ function calcResult() {
 
 let currentResultType = '';
 
+// код типажа с сайта → базовое имя бордов (images/<base>-<повод>.jpg)
 const TYPE_IMG = {
-  D: 'dramatic', SD: 'soft-dramatic', FD: 'flamboyant-dramatic',
+  D: 'dramatic', SD: 'soft-dramatic', FD: 'dramatic',
   N: 'natural', SN: 'soft-natural', FN: 'flamboyant-natural',
   C: 'classic', SC: 'soft-classic', DC: 'dramatic-classic',
-  R: 'romantic', SR: 'soft-romantic', G: 'gamine', FG: 'flamboyant-gamine'
+  R: 'romantic', SR: 'theatrical-romantic', G: 'gamine', FG: 'flamboyant-gamine',
+  SG: 'soft-gamine'
 };
+
+let currentBoardBase = '';
+
+function showBoard(occ) {
+  if (!currentBoardBase) return;
+  document.querySelectorAll('.looks-tab').forEach(b => b.classList.toggle('selected', b.dataset.occ === occ));
+  document.getElementById('looks-img').src = 'images/' + currentBoardBase + '-' + occ + '.jpg';
+}
 
 function showResult(typeKey, extra) {
   const t = TYPES[typeKey] || TYPES['C'];
@@ -993,16 +1024,17 @@ function showResult(typeKey, extra) {
     grid.appendChild(div);
   });
 
-  // картинка с образами по типажу
+  // борды образов по типажу (вкладки Работа/Прогулка/Вечерний)
   const looksWrap = document.getElementById('looks-wrap');
   const looksImg = document.getElementById('looks-img');
-  const slug = TYPE_IMG[realKey];
-  if (slug) {
+  const base = TYPE_IMG[realKey];
+  if (base) {
+    currentBoardBase = base;
     looksImg.onerror = () => { looksWrap.style.display = 'none'; };
-    looksImg.onload = () => { looksWrap.style.display = 'block'; };
-    looksWrap.style.display = 'none';
-    looksImg.src = 'images/' + slug + '.jpg';
+    looksWrap.style.display = 'block';
+    showBoard('work');
   } else {
+    currentBoardBase = '';
     looksWrap.style.display = 'none';
   }
 

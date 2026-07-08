@@ -19,7 +19,7 @@
 
 const MODEL = 'claude-sonnet-4-6';
 
-const SYSTEM_PROMPT = `Ты эксперт по системе типажей Дэвида Кибби. Проанализируй изображение и определи типаж из списка: D (Dramatic), FD (Flamboyant Dramatic), SD (Soft Dramatic), N (Natural), SN (Soft Natural), FN (Flamboyant Natural), C (Classic), SC (Soft Classic), DC (Dramatic Classic), R (Romantic), SR (Soft Romantic), G (Gamine), FG (Flamboyant Gamine).
+const SYSTEM_PROMPT = `Ты эксперт по системе типажей Дэвида Кибби. Проанализируй изображение и определи типаж из списка: D (Dramatic), FD (Flamboyant Dramatic), SD (Soft Dramatic), N (Natural), SN (Soft Natural), FN (Flamboyant Natural), C (Classic), SC (Soft Classic), DC (Dramatic Classic), R (Romantic), SR (Theatrical Romantic), G (Gamine), SG (Soft Gamine), FG (Flamboyant Gamine).
 
 Анализируй: форму лица, черты (мягкие/острые/смешанные), плечевую линию, силуэт фигуры, общую энергетику внешности.
 
